@@ -14,9 +14,11 @@ class Npuzzle_Tester(object):
 
         self.ds = []
         self.solver = Solver()
-        self.maxval = self.n * self.n   # This is the 'empty' cell
+        self.maxval = self.n * self.n   # This value resembles the 'empty' cell
 
         self._p('MaxVal: {}'.format(self.maxval))
+
+        self._og = OutputGenerator(self.n, self.num_run)    # Output Generator
 
     def _create_ds(self):
         self.ds = [[self._get_unit_ds(row, col) for col in range(self.n)] for row in range(self.n)]
@@ -127,6 +129,9 @@ class Npuzzle_Tester(object):
         if self.result == sat:
             self.model = self.solver.model()
             print(self.model)
+            print('-------------------------------------')
+
+            self._og.add_model(self.ds, self.model, str(self.maxval))
         else:
             print('Not Sat!')
 
@@ -144,11 +149,93 @@ class Npuzzle_Tester(object):
         self._initialize()
         self._run()
         # print('{}'.format(self.ds))
+        self._og.write_html()
         self._p('-- DONE --')
         
 
 
+class OutputGenerator():
+
+    def __init__(self, n, num_run, test_number=0, is_html=True):
+        self.n = n
+        self.num_run = num_run
+        self.is_html = is_html
+        self.test_number = test_number
+
+        self.html = ''
+        self.data = []
+
+    def add_model(self, ds, model, max_val):
+
+        c_data = []     # Current Data
+
+        for i in range(self.num_run):
+            board = [[-1 for __ in range(self.n)] for _ in range(self.n)]
+            c_data.append(board)
+
+        # print(c_data)
+
+
+        for r in range(self.n):
+            for c in range(self.n):
+                for i in range(self.num_run):
+                    c_data[i][r][c] = model.evaluate(ds[r][c](i))
+                    # print(model.evaluate(ds[r][c](i)))
+                    # print('ok')
+
+        # for d in model.decls():
+        #     r, c = d.name().split('_')
+        #     r = int(r) - 1
+        #     c = int(c) - 1
+
+        #     x = model[d]
+        #     print(x)
+
+        #     for ii in range(self.num_run):
+        #         print(model.evaluate(ds[r][c](ii)))
+        #         # print('ok')
+
+        # print(c_data)
+
+        self.data.append(c_data)
+
+        if self.is_html:
+            html = '<div class="test" style="float:left; display: inline-block;"><h2>Test {0}</h2>'.format(self.test_number)
+
+            for board in c_data:
+
+                html += '<div class="stage"><table style="border: 1px solid red; margin:10px;">'
+
+                for row in board:
+                    html += '<tr>'
+
+                    for col in row:
+                        style = 'style="background: yellow;"' if str(col) == max_val else ''
+                        html += '<td {0}>'.format(style) + str(col) + '</td>'
+
+                    html += '</tr>'
+
+
+                html += '</table></div>'
+
+            html += '</div>'
+
+            # print html
+            self.html += html
+
+    def write_html(self):
+        if len(self.html) > 0:
+            print('Writing output as html...')
+            with open('npuzzle.html', 'w') as outfile:
+                outfile.write(self.html)
+        else:
+            print('No HTML written.')
+
+
+
+
+
 if __name__ == '__main__':
     
-    tester = Npuzzle_Tester(3, 5)
+    tester = Npuzzle_Tester(3, 10)
     tester.generate_tests()

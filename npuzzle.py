@@ -52,8 +52,13 @@ class Npuzzle_Tester(object):
 
                 if it == self.num_run-1:
                     self._p('[LAST LOOP] No transitions applied!')
+                    self._final_stage_constrains(item, r, c, it)
                 else:
                     self._apply_transitions(item, r, c, it)
+
+    def _final_stage_constrains(self, item, r, c, i):
+        expected_val = (r * self.n) + (c + 1)
+        self.solver.add(item(i) == expected_val)
 
     def _apply_transitions(self, item, r, c,  i):
 

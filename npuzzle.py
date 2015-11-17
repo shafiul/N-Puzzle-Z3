@@ -37,6 +37,8 @@ class Npuzzle_Tester(object):
                 self.solver.add(item(it) > 0)
                 self.solver.add(item(it) <= self.maxval)
 
+                # Constraints for unique item in each cell
+
                 for x in range(self.n):
                     for y in range(self.n):
 
@@ -46,30 +48,59 @@ class Npuzzle_Tester(object):
                             other_item = self.ds[x][y]
                             self.solver.add(item(it) != other_item(it))
 
-            if it == self.num_run-1:
-                self._p('[Last Loop!]')
-            else:
-                self._apply_transitions()
+                # Add Transitions
+
+                if it == self.num_run-1:
+                    self._p('[LAST LOOP] No transitions applied!')
+                else:
+                    self._apply_transitions(item, r, c, it)
 
     def _apply_transitions(self, item, r, c,  i):
-        e = self._maxval
+
+        self._p('[T] Applying transitions in iteration {0}...'.format(i))
+
+        e = self.maxval
         n_m_1 = self.n-1
 
+        ns = []     # Neighbors
 
-        def s1(neigh):
+        if r > 0:
+            ns.append(self.ds[r-1][c])
+        if r < n_m_1:
+            ns.append(self.ds[r+1][c])
+        if c < n_m_1:
+            ns.append(self.ds[r][c+1])
+        if c > 0:
+            ns.append(self.ds[r][c-1])
+
+        # it_n = (self.ds[r-1][c], (r > 0),)  # r-1 >= 0; r >= 1
+        # it_s = (self.ds[r+1][c], (r < n_m_1),)  # r+1 < n; r < n-1
+        # it_e = (self.ds[r][c+1], (c < n_m_1),)  # 
+        # it_w = (self.ds[r][c-1], (c > 0),)  #
+
+        def s1():
             """
                 cur: Current Element
             """
-            return And(neigh[1], item(i+1) == neigh[0](i), neigh[0](i+1) == e)
+            return [And(item(i+1) == x(i), x(i+1) == e) for x in ns]
+            # return And(neigh[1], item(i+1) == neigh[0](i), neigh[0](i+1) == e)
 
-        it_n = (self.ds[r-1][c], (r > 0),)  # r-1 >= 0; r >= 1
-        it_s = (self.ds[r+1][c], (r < n_m_1),)  # r+1 < n; r < n-1
-        it_e = (self.ds[r][c+1], (c < n_m_1),)  # 
-        it_w = (self.ds[r][c-1], (c > 0),)  #
 
-        c_empty = And((item(i) == e), Or(s1(it_n), s1(it_s), s1(it_e), s1(it_w)))
+        conds = s1()
 
-        c_nonempty = And((item(i) != e), Or())
+        c_empty = And((item(i) == e), Or(*conds))
+        # c_empty = And((item(i) == e), Or(s1(it_n), s1(it_s), s1(it_e), s1(it_w)))
+
+
+        def s2():
+            return [And(n(i) == e, n(i+1) == item(i), item(i+1) == e) for n in ns]
+            # return And(neigh[1], neighbor[0](i+1) == e item(i+1) == neigh[0](i), neighbor[0](i+1) == e)
+
+        conds = s2()
+
+        conds.append(item(i+1) == item(i))
+
+        c_nonempty = And((item(i) != e), Or(*conds))
 
         self.solver.add(Or(c_empty, c_nonempty))
 
@@ -114,5 +145,5 @@ class Npuzzle_Tester(object):
 
 if __name__ == '__main__':
     
-    tester = Npuzzle_Tester(3, 2)
+    tester = Npuzzle_Tester(3, 5)
     tester.generate_tests()

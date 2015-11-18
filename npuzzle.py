@@ -22,8 +22,6 @@ class Npuzzle_Tester(object):
 
     def _create_ds(self):
         self.ds = [[self._get_unit_ds(row, col) for col in range(self.n)] for row in range(self.n)]
-        # for row in self.n:
-        #     row = [1,2,3]
 
     def _get_unit_ds(self, r, c):
         return Function('{0}_{1}'.format(r+1, c+1), BitVecSort(NUM_BITS), BitVecSort(NUM_BITS) )
@@ -32,6 +30,8 @@ class Npuzzle_Tester(object):
         self._create_ds()
 
     def _common_constrains_each_step(self, it):
+
+        non_final_constrains = []  # Check that intermediate step is not a final step
 
         for r, row in enumerate(self.ds):
             for c, item in enumerate(row):
@@ -53,10 +53,19 @@ class Npuzzle_Tester(object):
                 # Add Transitions
 
                 if it == self.num_run-1:
-                    self._p('[LAST LOOP] No transitions applied!')
+                    # self._p('[LAST LOOP] No transitions applied!')
                     self._final_stage_constrains(item, r, c, it)
                 else:
                     self._apply_transitions(item, r, c, it)
+
+                    forbidden_val = (r * self.n) + (c + 1)
+
+                    non_final_constrains.append(item(it) != forbidden_val)
+        
+        if len(non_final_constrains) > 0:
+            print('Contains: {0}'.format(non_final_constrains))
+
+            self.solver.add(Or(*non_final_constrains))
 
     def _final_stage_constrains(self, item, r, c, i):
         expected_val = (r * self.n) + (c + 1)
@@ -237,5 +246,5 @@ class OutputGenerator():
 
 if __name__ == '__main__':
     
-    tester = Npuzzle_Tester(3, 10)
+    tester = Npuzzle_Tester(3, 5)
     tester.generate_tests()

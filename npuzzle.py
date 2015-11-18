@@ -3,14 +3,16 @@
 from z3 import *
 
 OPT_DEBUG = True
-NUM_BITS = 5
+NUM_BITS = 7
 
 class Npuzzle_Tester(object):
     """docstring for Npuzzle_Tester"""
-    def __init__(self,n, num_run, *args, **kwargs):
+
+    def __init__(self,n, num_run, num_tests, *args, **kwargs):
         super(Npuzzle_Tester, self).__init__(*args, **kwargs)
         self.n = n # Number of cells
         self.num_run = num_run  # Number of times loop will run
+        self.num_tests = num_tests  # Number of test cases to generate
 
         self.ds = []
         self.solver = Solver()
@@ -131,18 +133,44 @@ class Npuzzle_Tester(object):
         self._post_run()
 
     def _post_run(self):
-        self._p('Post Run...')
-        self.result = self.solver.check()
-        print(self.result)
+        self._p('...Post Run...')
 
-        if self.result == sat:
-            self.model = self.solver.model()
-            print(self.model)
-            print('-------------------------------------')
+        for t in range(self.num_tests):
 
-            self._og.add_model(self.ds, self.model, str(self.maxval))
-        else:
-            print('Not Sat!')
+            self.result = self.solver.check()
+
+            if self.result == sat:
+                self.model = self.solver.model()
+                # print(self.model)
+                # print('-------------------------------------')
+                output = self._og.add_model(self.ds, self.model, str(self.maxval), (t+1))
+
+                first_board = output[0]
+
+                cons = []  # Extra constraints for next test
+
+                for r in range(self.n):
+                    for c in range(self.n):
+                        cons.append(self.ds[r][c](0) != first_board[r][c])
+
+                self.solver.add(Or(*cons))
+
+            else:
+                print('No more test cases available. Total {0} found.'.format(t))
+
+
+        #####################################
+        # self.result = self.solver.check()
+        # print(self.result)
+
+        # if self.result == sat:
+        #     self.model = self.solver.model()
+        #     print(self.model)
+        #     print('-------------------------------------')
+
+        #     self._og.add_model(self.ds, self.model, str(self.maxval))
+        # else:
+        #     print('Not Sat!')
 
 
 
@@ -165,16 +193,15 @@ class Npuzzle_Tester(object):
 
 class OutputGenerator():
 
-    def __init__(self, n, num_run, test_number=0, is_html=True):
+    def __init__(self, n, num_run, is_html=True):
         self.n = n
         self.num_run = num_run
         self.is_html = is_html
-        self.test_number = test_number
 
         self.html = ''
         self.data = []
 
-    def add_model(self, ds, model, max_val):
+    def add_model(self, ds, model, max_val, test_number):
 
         c_data = []     # Current Data
 
@@ -209,28 +236,31 @@ class OutputGenerator():
         self.data.append(c_data)
 
         if self.is_html:
-            html = '<div class="test" style="float:left; display: inline-block;"><h2>Test {0}</h2>'.format(self.test_number)
+            html = '<div class="test" style=""><h2>Test {0}</h2>'.format(test_number)
 
             for board in c_data:
 
-                html += '<div class="stage"><table style="border: 1px solid red; margin:10px;">'
+                html += '<div class="stage"><table style="border: 1px solid black; border-collapse: collapse; margin:10px; float: left;">'
 
                 for row in board:
                     html += '<tr>'
 
                     for col in row:
-                        style = 'style="background: yellow;"' if str(col) == max_val else ''
-                        html += '<td {0}>'.format(style) + str(col) + '</td>'
+                        style = 'background: grey;' if str(col) == max_val else ''
+                        display = '&nbsp;' if str(col) == max_val else str(col)
+                        html += '<td style="border:1px solid black; {0}">'.format(style) + display + '</td>'
 
                     html += '</tr>'
 
 
                 html += '</table></div>'
 
-            html += '</div>'
+            html += '</div><div style="clear:both;">&nbsp;</div>'
 
-            # print html
+            # Add to already generated HTML
             self.html += html
+
+        return c_data
 
     def write_html(self):
         if len(self.html) > 0:
@@ -246,5 +276,5 @@ class OutputGenerator():
 
 if __name__ == '__main__':
     
-    tester = Npuzzle_Tester(3, 5)
+    tester = Npuzzle_Tester(4, 10, 3)
     tester.generate_tests()

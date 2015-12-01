@@ -28,26 +28,13 @@ s.add((1 + top.c) == top.n)
 p = c
 c += 1
 
-all = []
 for i in range(num_elements):
-    # temp = And(
-    #     (x.c == i),
-    #     Or(
-    #         And(x.c == top.c, (arr(c, x.c) == 4)),
-    #         And(arr(c, x.c) == arr(p, x.c))
-    #     )
-    # )
 
     s.add(Or(
         And(top.c == i, arr(c, i) == 4),
         And(top.c != i, arr(c, i) == arr(p, i))
     ))
     
-    # all.append(temp)
-
-# s.add(Or(*all))
-
-# s.add(arr(c, top.c) == 4)
 s.add((1 + top.c) == top.n) # top++
 
 # Encode: arr[top++] = 3;

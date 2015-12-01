@@ -1,3 +1,4 @@
 project.sublime-*
 *.html
 .fuse_*
+*.pyc

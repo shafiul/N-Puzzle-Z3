@@ -100,15 +100,16 @@ def quicksort_sa(data):
 
             if s.check() == unsat:
                 print('[FATAL] unsat in the inner while loop. Encoding failed.')
-                # print('unsat core: {}'.format(s.unsat_core()))
-                # print('encoding: \n{0}'.format(s))
+
+                print('unsat core: {}'.format(s.unsat_core()))
+                print('encoding: \n{0}'.format(s))
                 return
 
             if DEBUG:
                 e = s.model().evaluate
                 print('[FOR {0}] top: {1}; h: {2}; l:{3}; x: {4}; p: {5}; j: {6}'.format(
                     wc, e(top.c), e(h.c), e(l.c), e(x.c), e(p.c), e(jj.c)))
-                print('          array: [{}, {}]'.format(  e(arr.c(0)), e(arr.c(1))  ))
+                print('          array: [{}, {}, {}]'.format(  e(arr.c(0)), e(arr.c(1)), e(arr.c(2))  ))
 
             wc += 1
 
@@ -130,15 +131,21 @@ def quicksort_sa(data):
             #     )
             # ))
 
+            if_then_condition = (arr.c(jj.c) <= x.c)
+            if_else_condition = (arr.c(jj.c) > x.c)
+
             p_plus_plus = p.plusplus(add_to_solver=False, gen_else=True)
             arr_swap = arr.swap(p.c, jj.c, add_to_solver=False, gen_else=True)
 
+            if val_of_j == 1:
+                print('<<>> B4 Implies, model: \n{0}\n<<<<<<<>>>>>>>>'.format(s))
+
             s.add(Or(
                 And(
-                    (arr.c(jj.c) <= x.c), p_plus_plus[0], *arr_swap[0]
+                    if_then_condition, p_plus_plus[0], *arr_swap[0]
                 ),
                 And(
-                    (arr.c(jj.c) > x.c), p_plus_plus[1], *arr_swap[1]
+                    if_else_condition, p_plus_plus[1], *arr_swap[1]
                 )
             ))
 
@@ -157,7 +164,7 @@ def quicksort_sa(data):
             s.check()
             e = s.model().evaluate
 
-            print('>> arr b4 SWAP << : [{}, {}]'.format(e(arr.c(0)), e(arr.c(1))))
+            print('>> arr b4 SWAP << : [{}, {}, {}]'.format(e(arr.c(0)), e(arr.c(1)), e(arr.c(2)) ))
             print('>><< x: {}, h: {}'.format(e(x.c), e(h.c)))
 
         p.plusplus()                                                          # [e]  p = (p + 1);
@@ -167,7 +174,7 @@ def quicksort_sa(data):
             s.check()
             e = s.model().evaluate
 
-            print('>> arr b4 SWAP << : [{}, {}]'.format(e(arr.c(0)), e(arr.c(1))))
+            print('>> arr after SWAP << : [{}, {}, {}]'.format(e(arr.c(0)), e(arr.c(1)), e(arr.c(2)) ))
             print('>><< x: {}, h: {}'.format(e(x.c), e(h.c)))
 
 
@@ -281,6 +288,7 @@ def quicksort_sa(data):
 if __name__ == '__main__':
     # quicksort_sa((3, 0))
     # quicksort_sa((2, 4, 3, 5))
-    quicksort_sa((4, 2, 3))
+    quicksort_sa((2, 0, 3, -1))
+    # quicksort_sa((4, 2, 3))
     # quicksort_sa((4, 3, 5, 2, 1, 3, 2, 3))
     print('--- DONE ---')

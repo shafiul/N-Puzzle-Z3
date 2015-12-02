@@ -45,6 +45,7 @@ class SSA():
     def assign(self, elem, current=False):
         target = self.c if current else self.n
         self.solver.add(target == elem)
+        return target
 
 
 
@@ -92,12 +93,16 @@ class SSA_Arr():
             ))
 
     def swap(self, pos1, pos2):
+
+        # pos1_value = self.c(pos1)
+
         self.inc()
 
         for i in range(self.num_elements):
             self.s.add(Or(
                 And(pos1 == i, self.c(i) == self.p(pos2)),
-                And(position != i, self.c(i) == self.p(i))
+                And(pos2 == i, self.c(i) == self.p(pos1)),
+                And(pos1 != i, self.c(i) == self.p(i))
             ))
 
 

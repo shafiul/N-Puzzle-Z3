@@ -2,12 +2,13 @@ from z3 import *
 
 class SSA():
 
-    def __init__(self, creator, var_name=None, shadow_data=None):
+    def __init__(self, creator, var_name=None, shadow_data=None, solver=None):
         self.var_name = var_name
         self.inst = creator
 
         self.i = 0
-        self.s = shadow_data
+        # self.s = shadow_data
+        self.solver=solver
 
     @property
     def n(self):
@@ -35,20 +36,32 @@ class SSA():
     def len(self):
         return (self.i + 1)
 
+    def plusplus(self):
+        self.solver.add((1 + self.c) == self.n)
+
+    def minusminus(self):
+        self.solver.add((self.c - 1) == self.n)
+
+    def assign(self, elem, current=False):
+        target = self.c if current else self.n
+        self.solver.add(target == elem)
+
+
 
 class SSA_Arr():
 
-    def __init__(self, creator, var_name=None, shadow_data=None):
+    def __init__(self, creator, var_name=None, solver=None, num_elements=None):
         self.var_name = var_name
         self.inst = creator
 
         self.i = 0
-        self.s = shadow_data
+        self.s = solver
+        self.num_elements = num_elements
 
-    def n(self, index):
-        self.i += 1
-        # print('Returning {} th version of {} '.format(self.i, self.var_name))
-        return self.inst(self.i, index)
+    # def n(self, index):
+    #     self.i += 1
+    #     # print('Returning {} th version of {} '.format(self.i, self.var_name))
+    #     return self.inst(self.i, index)
 
     def c(self, index):
         # print('Returning {} th version of {} '.format(self.i, self.var_name))
@@ -57,8 +70,36 @@ class SSA_Arr():
     def nn(self, index):
         return self.inst(self.i + 1, index)
 
+    def p(self, index):
+        return self.inst(self.i - 1, index)    
+
     def inc(self):
         self.i += 1
+
+    def u(self, position, elem):
+        """
+            Creates a new version of this array (updates self.i)
+            In the new version, all elements are copied from the previous version, except
+            the element at `position`, which has new element `elem`
+        """
+
+        self.inc()
+
+        for i in range(self.num_elements):
+            self.s.add(Or(
+                And(position == i, self.c(i) == elem),
+                And(position != i, self.c(i) == self.p(i))
+            ))
+
+    def swap(self, pos1, pos2):
+        self.inc()
+
+        for i in range(self.num_elements):
+            self.s.add(Or(
+                And(pos1 == i, self.c(i) == self.p(pos2)),
+                And(position != i, self.c(i) == self.p(i))
+            ))
+
 
     @property
     def v(self):

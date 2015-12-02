@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 from functools import partial
-# from z3 import *
 from helper import *
 
 BITS = 16
@@ -9,56 +8,63 @@ num_elements = 6
 
 s = Solver()
 
-arr = Function('arr', BitVecSort(BITS), BitVecSort(BITS), BitVecSort(BITS))
-c = 0
+# arr = Function('arr', BitVecSort(BITS), BitVecSort(BITS), BitVecSort(BITS))
+arr = SSA_Arr(
+    Function('arr', BitVecSort(BITS), BitVecSort(BITS), BitVecSort(BITS)),
+    solver=s, num_elements=num_elements
+)
 
-top = SSA(Function('top', BitVecSort(BITS), BitVecSort(BITS)))
-topped = SSA(Function('topped', BitVecSort(BITS), BitVecSort(BITS)))
-x = SSA(Function('x', BitVecSort(BITS), BitVecSort(BITS)))
+top = SSA(Function('top', BitVecSort(BITS), BitVecSort(BITS)), solver=s)
+topped = SSA(Function('topped', BitVecSort(BITS), BitVecSort(BITS)), solver=s)
 
-s.add(top.c == 0)
+# s.add(top.c == 0)
+top.assign(0, current=True)
 
 # arr[top++] = 1;
 
-s.add(arr(c, top.c) == 1)
-s.add((1 + top.c) == top.n)
+# s.add(arr(c, top.c) == 1)
+s.add(arr.c(top.c) == 1)
+top.plusplus()
 
 # arr[top++] = 4;
 
-p = c
-c += 1
+# arr.inc()
 
-for i in range(num_elements):
+# for i in range(num_elements):
 
-    s.add(Or(
-        And(top.c == i, arr(c, i) == 4),
-        And(top.c != i, arr(c, i) == arr(p, i))
-    ))
+#     s.add(Or(
+#         And(top.c == i, arr.c(i) == 4),
+#         And(top.c != i, arr.c(i) == arr.p(i))
+#     ))
+
+arr.u(top.c, 4)
     
-s.add((1 + top.c) == top.n) # top++
+top.plusplus() # top++
 
 # Encode: arr[top++] = 3;
 
-p = c
-c += 1
+# arr.inc()
 
-for i in range(num_elements):
-    s.add(Or(
-        And(top.c == i, arr(c, i) == 3),
-        And(top.c != i, arr(c, i) == arr(p, i))
-    ))
+# for i in range(num_elements):
+#     s.add(Or(
+#         And(top.c == i, arr.c(i) == 3),
+#         And(top.c != i, arr.c(i) == arr.p(i))
+#     ))
 
-s.add((1 + top.c) == top.n) # top++
+arr.u(top.c, 3)
 
-# Encode: topped = arr[--top];
-
-s.add((top.c - 1) == top.n) # [[E]] top--
-# s.add((top.c - 1) == top.n) # [[E]] top--
-s.add(topped.c == arr(c, top.c)) # [[E]] topped = arr[top]
+top.plusplus() # top++
 
 # Encode: topped = arr[--top];
-s.add((top.c - 1) == top.n) # [[E]] top--
-s.add(topped.n == arr(c, top.c)) # [[E]] topped = arr[top]
+
+top.minusminus() # [[E]] top--
+# s.add(topped.c == arr.c(top.c)) # [[E]] topped = arr[top]
+topped.assign(arr.c(top.c), current=True)
+
+# Encode: topped = arr[--top];
+top.minusminus() # [[E]] top--
+# s.add(topped.n == arr.c(top.c)) # [[E]] topped = arr[top]
+topped.assign(arr.c(top.c)) # [[E]] topped = arr[top]
 
 
 
@@ -72,12 +78,12 @@ if s.check() == sat:
     m = s.model()
     print ('    Model: \n{}'.format(m))
 
-    print('--- arr dump, c: {} ---'.format(c))
+    print('--- arr dump, arr len: {} ---'.format(arr.len))
 
-    for i in range(c + 1):
+    for i in range(arr.len):
         print('------------- {} -------------'.format(i))
         for j in range(num_elements):
-            print('arr[{0}] -> {1}'.format(j, m.evaluate(arr(i, j))))
+            print('arr[{0}] -> {1}'.format(j, m.evaluate(arr.v(i, j))))
 
     print('--- topped dump ---')
 

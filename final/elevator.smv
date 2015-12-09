@@ -136,12 +136,8 @@ MODULE main
 -- corresponding elevator shaft on that floor are closed.
 
 
-LTLSPEC
-  G( ((mode=run | car != 1) -> d1=closed) & ((mode=run | car != 2) -> d2=closed) & ((mode=run | car != 3) -> d3=closed) );
-
-  --G( ((mode=run | car != 1) -> d1=closed)  );
-
-
+INVARSPEC
+  ((mode=run | car != 1) -> d1=closed) & ((mode=run | car != 2) -> d2=closed) & ((mode=run | car != 3) -> d3=closed);
 
 
  -- (ii) --
@@ -163,6 +159,14 @@ LTLSPEC
   G( ((mode=stop & car=1 & r1) -> F(d1=open & dc=open))  &  ((mode=stop & car=2 & r2) -> F(d2=open & dc=open)) & ((mode=stop & car=3 & r3) -> F(d3=open & dc=open))  );
 
 
+-- (iii) -- 
+--It is always the case that if an elevator car is moving, then the doors to the corresponding
+--elevator shaft are closed on every floor.
+
+INVARSPEC
+  (mode=run) -> d1=closed & d2=closed & d3=closed;
+
+
 -- (iv) --
 -- It is always the case that if an elevator car is requested to go to a particular floor, then
 -- eventually the elevator car arrives at that floor.
@@ -171,4 +175,17 @@ LTLSPEC
   G ( (r1 -> F (mode=stop & car = 1)) | (r2 -> F (mode=stop & car = 2)) | (r3 -> F (mode=stop & car = 3)) );
 
 
+-- (v) 
 
+-- It is always the case that, for any floor, the elevator car doors are closed if and only if the
+-- elevator shaft doors are closed on that floor.
+
+INVARSPEC
+  ((car=1 -> dc=closed) <-> ( car=1 -> d1=closed)) & ((car=2 -> dc=closed) <-> ( car=2 -> d2=closed)) & ((car=3 -> dc=closed) <-> ( car=3 -> d3=closed)) ;
+
+
+-- (vi) -- 
+-- The elevator shaft doors on different floors are never simultaneously open.
+
+INVARSPEC
+  (d1=open -> d2=closed & d3=closed) & (d2=open -> d1=closed & d3=closed) & (d3=open -> d2=closed & d1=closed)

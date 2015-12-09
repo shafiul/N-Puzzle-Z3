@@ -8,6 +8,9 @@ ZERO_BITVECVAL = BitVecVal(0, NUMBITS)
 
 DEBUG = True
 
+ARR_ELEM_LOWER_BOUND = 0
+ARR_ELEM_UPPER_BOUND = 20
+
 
 def quicksort_sa(data):
 
@@ -15,7 +18,12 @@ def quicksort_sa(data):
 
     s = Solver()
 
-    arr = encode_array('arr', NUMBITS, solver=s, num_elements=stack_capacity, init_val=data)      # [e] arr
+    # arr = encode_array('arr', NUMBITS, solver=s, num_elements=stack_capacity, init_val=data)      # [e] arr
+
+    arr = encode_array('arr', NUMBITS, solver=s, num_elements=stack_capacity)      # [e] arr
+
+    for i in range(stack_capacity):
+        s.add(arr.c(i) >= ARR_ELEM_LOWER_BOUND, arr.c(i) <= ARR_ELEM_UPPER_BOUND)
 
     h = encode_int('h', NUMBITS, solver=s, init_val=(len(data) - 1))           # [e] h = len(data) - 1
 
@@ -281,7 +289,23 @@ def quicksort_sa(data):
 
         print('--- top: {0} ---'.format(m.evaluate(top.c)))
     else:
+        print('---------  ENCODING FAILED!! -------------')
         print('Unsat Core: {}'.format(s.unsat_core()))
+        return
+
+    # Bug Finding
+    for i in range(len(data) - 1):
+        s.add(arr.c(i) > arr.c(i+1))
+
+    print('######################## BUG FINDING ########################')
+
+    r = s.check()
+    
+    if r == sat:
+        print('({}) Bug Found!'.format(r))
+    else:
+         print('({}) No Bug Found.'.format(r))
+
 
 
 

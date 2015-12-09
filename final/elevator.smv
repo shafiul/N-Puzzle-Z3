@@ -10,14 +10,24 @@ MODULE main
 
     dir : {up, down, none};
 
+    d1  : {open, closed};
+    d2  : {open, closed};
+    d3  : {open, closed};
+    dc  : {open, closed};
+
 
   ASSIGN
 
-    init(car) := 1;                                 -- TODO
+    init(car) := 1;                                 -- Assumption
     init(dir) := up;
 
 
     init(mode) := stop;
+
+    init(d1)    :=  closed;
+    init(d2)    :=  closed;
+    init(d3)    :=  closed;
+    init(dc)    :=  closed;
 
                               ---- mode ---
 
@@ -84,8 +94,47 @@ MODULE main
     esac;
 
 
+                              ---- Doors ---
 
--- (iv) It is always the case that if an elevator car is requested to go to a particular floor, then
+    next(d1) := case
+      next(mode) = run  | next(car) != 1        :       closed;
+      next(mode) = stop & car = 1               : {open, closed};
+      TRUE                                      : d1;
+    esac;
+
+    next(d2) := case
+      next(mode) = run  | next(car) != 2        :       closed;
+      next(mode) = stop & car = 2               : {open, closed};
+      TRUE                                      : d2;
+    esac;
+
+    next(d3) := case
+      next(mode) = run  | next(car) != 3        :       closed;
+      next(mode) = stop & car = 3               : {open, closed};
+      TRUE                                      : d3;
+    esac;
+
+
+
+
+                              ---- SPECIFICATIONS ---
+
+
+-- (i) --
+-- It is always the case that if an elevator car is not at a particular floor, then the doors to the
+-- corresponding elevator shaft on that floor are closed.
+
+
+LTLSPEC
+  G( ((mode=run | car != 1) -> d1=closed) & ((mode=run | car != 2) -> d2=closed) & ((mode=run | car != 3) -> d3=closed) );
+
+  --G( ((mode=run | car != 1) -> d1=closed)  );
+  
+
+
+
+-- (iv) --
+-- It is always the case that if an elevator car is requested to go to a particular floor, then
 -- eventually the elevator car arrives at that floor.
 
 LTLSPEC

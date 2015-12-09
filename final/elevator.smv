@@ -24,10 +24,12 @@ MODULE main
 
     init(mode) := stop;
 
-    init(d1)    :=  closed;
+    init(d1)    :=  open;
     init(d2)    :=  closed;
     init(d3)    :=  closed;
     init(dc)    :=  closed;
+
+    init(r1)    :=  TRUE;
 
                               ---- mode ---
 
@@ -98,20 +100,20 @@ MODULE main
 
     next(d1) := case
       next(mode) = run  | next(car) != 1        :       closed;
-      next(mode) = stop & car = 1               : {open, closed};
-      TRUE                                      : d1;
+      next(mode) = stop & car = 1               :       open;
+      TRUE                                      :       d1;
     esac;
 
     next(d2) := case
       next(mode) = run  | next(car) != 2        :       closed;
-      next(mode) = stop & car = 2               : {open, closed};
-      TRUE                                      : d2;
+      next(mode) = stop & car = 2               :       open;
+      TRUE                                      :       d2;
     esac;
 
     next(d3) := case
       next(mode) = run  | next(car) != 3        :       closed;
-      next(mode) = stop & car = 3               : {open, closed};
-      TRUE                                      : d3;
+      next(mode) = stop & car = 3               :       open;
+      TRUE                                      :       d3;
     esac;
 
 
@@ -129,7 +131,19 @@ LTLSPEC
   G( ((mode=run | car != 1) -> d1=closed) & ((mode=run | car != 2) -> d2=closed) & ((mode=run | car != 3) -> d3=closed) );
 
   --G( ((mode=run | car != 1) -> d1=closed)  );
-  
+
+
+
+
+ -- (ii) --
+ 
+-- It is always the case that if an elevator car is at a particular floor, then eventually both the
+-- doors to the corresponding elevator shaft on that floor open and the doors to the elevator
+-- car open. 
+
+LTLSPEC
+  G( ((mode=stop & car=1) -> F(d1=open)) & ((mode=stop & car=2) -> F(d2=open)) & ((mode=stop & car=3) -> F(d3=open))  );
+
 
 
 

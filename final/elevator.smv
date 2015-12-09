@@ -1,0 +1,95 @@
+MODULE main
+  VAR
+    car : {1, 2, 3};
+
+    r1 : boolean;
+    r2 : boolean;
+    r3 : boolean;
+
+    mode : {stop, run};
+
+    dir : {up, down, none};
+
+
+  ASSIGN
+
+    init(car) := 1;                                 -- TODO
+    init(dir) := up;
+
+
+    init(mode) := stop;
+
+                              ---- mode ---
+
+    next(mode) := case
+
+      mode = stop & ( (car = 1 & (r2|r3)) | (car = 2 & (r1|r3)) | (car = 3 & (r1|r2)) ) : run; 
+
+--      mode = stop & ( (car = 1 & (r1 | !r1 | !r2 | !r3) ) )
+
+      mode = run : stop;                      -- TODO
+      TRUE: mode;
+
+    esac;
+
+                              ---- car ---
+
+    next(car) := case
+
+      next(mode) = run & ( (car = 1 & (r2|r3))  ) : 2; 
+
+      next(mode) = run & ( (car = 2 & (r1|r3))  ) : case
+              dir = up    : 3;
+              dir = down  : 1;
+              dir = none  : {1, 2};
+            esac; 
+
+      next(mode) = run & ( (car = 3 & (r1|r2))  ) : 2;
+      TRUE: car;   
+
+    esac;
+
+
+                              ---- direction ---
+
+    next(dir) := case
+
+      next(mode) = stop: case
+          car = 1: up;
+          car = 3: down;
+          car = 2 & r1 & !r3: down;
+          car = 2 & !r1 & r3: up;
+          car = 2 & !r1 & !r3: none;
+          TRUE: dir;
+        esac;
+
+      TRUE: dir;
+    esac;
+
+                              ---- request ---
+
+    next(r1) := case
+      r1 & next(mode) = stop & next(car) = 1: FALSE;
+      TRUE: r1; 
+    esac;
+
+    next(r2) := case
+      r2 & next(mode) = stop & next(car) = 2: FALSE;
+      TRUE: r2; 
+    esac;
+
+    next(r3) := case
+      r3 & next(mode) = stop & next(car) = 3: FALSE;
+      TRUE: r3; 
+    esac;
+
+
+
+-- (iv) It is always the case that if an elevator car is requested to go to a particular floor, then
+-- eventually the elevator car arrives at that floor.
+
+LTLSPEC
+  G ( (r1 -> F (mode=stop & car = 1)) | (r2 -> F (mode=stop & car = 2)) | (r3 -> F (mode=stop & car = 3)) );
+
+
+

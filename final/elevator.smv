@@ -16,6 +16,7 @@ MODULE main
     dc  : {open, closed};
 
     rc  : 0..100;                 -- counter for run mode
+    skip: boolean;                --  skip STOPPING the car when it arrives a floor which was not requested
 
   DEFINE
     MAXRUN  := 2; 
@@ -37,6 +38,14 @@ MODULE main
     init(dc)    :=  open;
 
     init(r1)    :=  TRUE;
+    init(skip)  :=  FALSE;
+
+                              ---- skip (skip stopping) ---
+
+    next(skip)  :=  case
+      mode=run & rc >= MAXRUN & !r2 & car=2 : TRUE;
+      TRUE                                  : FALSE;
+    esac;
 
                               ---- mode ---
 
@@ -48,7 +57,10 @@ MODULE main
 
       mode = run : case
                       rc < MAXRUN   : run;
-                      rc >= MAXRUN  : stop;
+                      rc >= MAXRUN  : case
+                                        !r2 & car=2 : run;
+                                        TRUE        : stop;
+                                      esac;
                   esac;                     
       TRUE: mode;
 
@@ -57,7 +69,7 @@ MODULE main
                               ---- rc (run counter) ---
 
     next(rc) := case
-      next(mode)=stop                           : 0;
+      next(mode)=stop | next(skip)              : 0;
       mode=run & rc < MAXRUN                    : rc + 1;
       TRUE                                      : rc;
     esac;
@@ -68,7 +80,7 @@ MODULE main
 
       mode=stop & next(mode) = run & ( (car = 1 & (r2|r3))  ) : 2; 
 
-      mode=stop & next(mode) = run & ( (car = 2 & (r1|r3))  ) : case
+      ((mode=stop & next(mode) = run) | next(skip)) & ( (car = 2 & (r1|r3))  ) : case
               dir = up    : 3;
               dir = down  : 1;
               dir = none  : {1, 2};

@@ -172,7 +172,7 @@ INVARSPEC
 -- eventually the elevator car arrives at that floor.
 
 LTLSPEC
-  G ( (r1 -> F (mode=stop & car = 1)) | (r2 -> F (mode=stop & car = 2)) | (r3 -> F (mode=stop & car = 3)) );
+  G ( (r1 -> F (mode=stop & car = 1)) & (r2 -> F (mode=stop & car = 2)) & (r3 -> F (mode=stop & car = 3)) );
 
 
 -- (v) 

@@ -1,36 +1,37 @@
 MODULE main
   VAR
-    car : {1, 2, 3};
+    car : {1, 2, 3};            -- Denotes where the elevator car is now. We update this variable only after the car starts moving i.e. the `mode` goes into `run` state 
 
-    r1 : boolean;
-    r2 : boolean;
-    r3 : boolean;
+    r1 : boolean;               --  Denotes whether the car has been requested to stop at floor 1
+    r2 : boolean;               --  Denotes whether the car has been requested to stop at floor 2
+    r3 : boolean;               --  Denotes whether the car has been requested to stop at floor 3
 
-    mode : {stop, run};
+    mode : {stop, run};         --  Our system has two "modes". When the car is is in motion, `mode` is `run`. And when it stops, `mode` is `stop`.
 
-    dir : {up, down, none};
+    dir : {up, down, none};     --  Variable to keep track in which direction the car should move. For example when the car is moving from floor 1 to floor 2, and both floor 1 and floor 3 is requested prior to it reaches floor 2, the car must remember that it was going upwards and should go to floor 3 before visiting floor 1.
 
-    d1  : {open, closed};
-    d2  : {open, closed};
-    d3  : {open, closed};
-    dc  : {open, closed};
+    d1  : {open, closed};       --  Denotes status of shaft door at Floor 1
+    d2  : {open, closed};       --  Denotes status of shaft door at Floor 2
+    d3  : {open, closed};       --  Denotes status of shaft door at Floor 3
+    dc  : {open, closed};       --  Denotes status of car door.
 
-    rc  : 0..100;                 -- counter for run mode
-    skip: boolean;                --  skip STOPPING the car when it arrives a floor which was not requested
+    rc  : 0..100;               -- Once entered in the `run` mode, the system counts from 0 to MAXRUN before it reaches the next floor. This is a realistic assumption that the car takes a fixed amount of "time" to reach the next floor. 
+
+    skip: boolean;               -- When this variable is `True`, car will not be stopped at current floor and will proceed to next floor. This ensures the car not stopping in 2nd floor if only the 3rd floor was requested when the car started moving from 1st floor.
 
   DEFINE
-    MAXRUN  := 2; 
+    MAXRUN  := 2;                 -- Once we enter the `run` mode, we count from 0 to MAXRUN and then we reach the next floor.
 
 
   ASSIGN
 
-    init(car) := 1;                                 -- Assumption
-    init(dir) := up;
+    init(car) := 1;               -- Assumption: Car is at first floor.
+    init(dir) := up;              -- Assumption: It is only possible to go upwards from the first floor.
 
     init(rc)  :=  0;
 
 
-    init(mode) := stop;
+    init(mode) := stop;           -- Assumtion: Car is stopped initially.
 
     init(d1)    :=  open;
     init(d2)    :=  closed;
@@ -40,20 +41,18 @@ MODULE main
     init(r1)    :=  TRUE;
     init(skip)  :=  FALSE;
 
-                              ---- skip (skip stopping) ---
+                              ---- Transition: skip (skip stopping) ---
 
     next(skip)  :=  case
       mode=run & rc >= MAXRUN & !r2 & car=2 : TRUE;
       TRUE                                  : FALSE;
     esac;
 
-                              ---- mode ---
+                              ---- Transition: mode ---
 
     next(mode) := case
 
       mode = stop & ( (car = 1 & (r2|r3)) | (car = 2 & (r1|r3)) | (car = 3 & (r1|r2)) ) : run; 
-
---      mode = stop & ( (car = 1 & (r1 | !r1 | !r2 | !r3) ) )
 
       mode = run : case
                       rc < MAXRUN   : run;
@@ -66,7 +65,7 @@ MODULE main
 
     esac;
 
-                              ---- rc (run counter) ---
+                              ---- Transition: rc (run counter) ---
 
     next(rc) := case
       next(mode)=stop | next(skip)              : 0;
@@ -74,7 +73,7 @@ MODULE main
       TRUE                                      : rc;
     esac;
 
-                              ---- car ---
+                              ---- Transition: car ---
 
     next(car) := case
 
@@ -92,7 +91,7 @@ MODULE main
     esac;
 
 
-                              ---- direction ---
+                              ---- Transition: direction ---
 
     next(dir) := case
 
@@ -108,7 +107,7 @@ MODULE main
       TRUE: dir;
     esac;
 
-                              ---- request ---
+                              ---- Transition: requests ---
 
     next(r1) := case
       r1 & next(mode) = stop & next(car) = 1: FALSE;
@@ -126,7 +125,7 @@ MODULE main
     esac;
 
 
-                              ---- Doors ---
+                              ---- Transition: Doors ---
 
     next(d1) := case
       next(mode) = run  | next(car) != 1        :       closed;

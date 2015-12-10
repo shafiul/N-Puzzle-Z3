@@ -209,5 +209,7 @@ INVARSPEC
   (d1=open -> d2=closed & d3=closed) & (d2=open -> d1=closed & d3=closed) & (d3=open -> d2=closed & d1=closed)
 
 
+-- My Own Requirements --
+
 LTLSPEC 
-  G F (mode=run);
+  G ((r1 | r2 | r3) -> F ( (r1 | r2 | r3) -> mode=run));

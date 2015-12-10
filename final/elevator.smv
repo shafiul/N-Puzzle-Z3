@@ -15,11 +15,18 @@ MODULE main
     d3  : {open, closed};
     dc  : {open, closed};
 
+    rc  : 0..100;                 -- counter for run mode
+
+  DEFINE
+    MAXRUN  := 2; 
+
 
   ASSIGN
 
     init(car) := 1;                                 -- Assumption
     init(dir) := up;
+
+    init(rc)  :=  0;
 
 
     init(mode) := stop;
@@ -39,24 +46,35 @@ MODULE main
 
 --      mode = stop & ( (car = 1 & (r1 | !r1 | !r2 | !r3) ) )
 
-      mode = run : stop;                      -- TODO
+      mode = run : case
+                      rc < MAXRUN   : run;
+                      rc >= MAXRUN  : stop;
+                  esac;                     
       TRUE: mode;
 
+    esac;
+
+                              ---- rc (run counter) ---
+
+    next(rc) := case
+      next(mode)=stop                           : 0;
+      mode=run & rc < MAXRUN                    : rc + 1;
+      TRUE                                      : rc;
     esac;
 
                               ---- car ---
 
     next(car) := case
 
-      next(mode) = run & ( (car = 1 & (r2|r3))  ) : 2; 
+      mode=stop & next(mode) = run & ( (car = 1 & (r2|r3))  ) : 2; 
 
-      next(mode) = run & ( (car = 2 & (r1|r3))  ) : case
+      mode=stop & next(mode) = run & ( (car = 2 & (r1|r3))  ) : case
               dir = up    : 3;
               dir = down  : 1;
               dir = none  : {1, 2};
             esac; 
 
-      next(mode) = run & ( (car = 3 & (r1|r2))  ) : 2;
+      mode=stop & next(mode) = run & ( (car = 3 & (r1|r2))  ) : 2;
       TRUE: car;   
 
     esac;
@@ -189,3 +207,7 @@ INVARSPEC
 
 INVARSPEC
   (d1=open -> d2=closed & d3=closed) & (d2=open -> d1=closed & d3=closed) & (d3=open -> d2=closed & d1=closed)
+
+
+LTLSPEC 
+  G F (mode=run);

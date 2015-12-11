@@ -1,0 +1,36 @@
+MODULE main
+  VAR
+    mode : {loop, stop};
+    x : 0..1023;
+    y : 0..1023;
+
+  DEFINE m := 5;
+  DEFINE n := 4;
+
+  INIT
+    mode=loop & x = m & y = 0;
+
+  TRANS
+
+    ((mode=loop & x>0) -> (next(mode)=loop & (next(x)=x+(-1)) & next(y)=(y+n))) & 
+    ((mode=loop & x=0) -> (next(mode)=stop & (next(x)=x) & next(y)=y)) &
+    ((mode=stop) -> (next(mode)=stop & (next(x)=x) & next(y)=y));
+
+
+INVARSPEC
+  (mode = stop) -> (y = m*n);
+
+INVARSPEC
+    ((mode = stop) -> (y = m*n)) & ((x*n + y) = m*n);
+
+-- Formalize and use nuXmv to prove an LTL liveness requirement that 
+-- it is always the case that eventually a state where y is m*n is reached.
+
+LTLSPEC
+  G( F (y=(m*n)) );
+
+
+-- We can optionally also show that, eventually we reach a state where value of y
+-- will always be m*n
+--LTLSPEC
+  --F( G (y=(m*n)) );

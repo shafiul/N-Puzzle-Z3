@@ -2,3 +2,5 @@ project.sublime-*
 *.html
 .fuse_*
 *.pyc
+report/report.log
+report/report.pdf
